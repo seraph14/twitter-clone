@@ -2,24 +2,26 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:twitter_clone/common/loading_page.dart';
-import 'package:twitter_clone/common/rounded_small_button.dart';
-import 'package:twitter_clone/constants/ui_constants.dart';
 import 'package:twitter_clone/features/auth/controller/auth_controller.dart';
-import 'package:twitter_clone/features/auth/view/signup_view.dart';
-import 'package:twitter_clone/features/auth/widgets/auth_field.dart';
-import 'package:twitter_clone/theme/pallete.dart';
+import 'package:twitter_clone/features/auth/view/login_view.dart';
 
-class LoginView extends ConsumerStatefulWidget {
+import '../../../common/common.dart';
+import '../../../constants/constants.dart';
+import '../../../theme/pallete.dart';
+import '../widgets/auth_field.dart';
+
+class SignUpView extends ConsumerStatefulWidget {
   static route() => MaterialPageRoute(
-        builder: ((context) => const LoginView()),
+        builder: ((context) => const SignUpView()),
       );
-  const LoginView({super.key});
+
+  const SignUpView({super.key});
 
   @override
-  ConsumerState<LoginView> createState() => _LoginViewState();
+  ConsumerState<SignUpView> createState() => _SignUpViewState();
 }
 
-class _LoginViewState extends ConsumerState<LoginView> {
+class _SignUpViewState extends ConsumerState<SignUpView> {
   final appBar = UIConstants.appBar();
   final emaillController = TextEditingController();
   final passwordController = TextEditingController();
@@ -31,8 +33,8 @@ class _LoginViewState extends ConsumerState<LoginView> {
     super.dispose();
   }
 
-  void onLogin() {
-    ref.watch(authControllerProvider.notifier).login(
+  void onSignUp() {
+    ref.watch(authControllerProvider.notifier).signup(
           email: emaillController.text,
           password: passwordController.text,
           buildContext: context,
@@ -44,10 +46,10 @@ class _LoginViewState extends ConsumerState<LoginView> {
     final isLoading = ref.watch(authControllerProvider);
     return Scaffold(
       appBar: appBar,
-      body: isLoading
-          ? const LoadingPage()
-          : Center(
-              child: SingleChildScrollView(
+      body: Center(
+        child: isLoading
+            ? const LoadingPage()
+            : SingleChildScrollView(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Column(
@@ -70,20 +72,20 @@ class _LoginViewState extends ConsumerState<LoginView> {
                         alignment: Alignment.topRight,
                         child: RoundedSmallButton(
                           label: "Done",
-                          onTap: onLogin,
+                          onTap: onSignUp,
                         ),
                       ),
                       const SizedBox(height: 40),
                       RichText(
                         text: TextSpan(
-                          text: "Don't have an account?",
-                          style: const TextStyle(
+                          text: "Already have an account?",
+                          style: TextStyle(
                             fontSize: 16,
                           ),
                           children: [
                             TextSpan(
-                              text: " Sign up",
-                              style: const TextStyle(
+                              text: " Login",
+                              style: TextStyle(
                                 color: Pallete.blueColor,
                                 fontSize: 16,
                               ),
@@ -91,7 +93,7 @@ class _LoginViewState extends ConsumerState<LoginView> {
                                 ..onTap = () {
                                   Navigator.push(
                                     context,
-                                    SignUpView.route(),
+                                    LoginView.route(),
                                   );
                                 },
                             )
@@ -103,7 +105,7 @@ class _LoginViewState extends ConsumerState<LoginView> {
                   ),
                 ),
               ),
-            ),
+      ),
     );
   }
 }
