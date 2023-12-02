@@ -21,12 +21,13 @@ class MyApp extends ConsumerWidget {
       title: 'Twitter Clone',
       theme: AppTheme.theme,
       home: ref.watch(currentUserAccountProvider).when(
-          data: (user) {
-            if (user != null) return const HomeView();
-            return const SignUpView();
-          },
-          error: (error, st) => ErrorPage(error: error.toString()),
-          loading: () => const LoadingPage()),
+            data: (user) {
+              if (user != null) return const HomeView();
+              return const SignUpView();
+            },
+            error: (error, st) => ErrorPage(error: error.toString()),
+            loading: () => const LoadingPage(),
+          ),
     );
   }
 }

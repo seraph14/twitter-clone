@@ -8,17 +8,29 @@ import 'package:twitter_clone/features/auth/view/login_view.dart';
 import 'package:twitter_clone/features/home/view/home_view.dart';
 import 'package:twitter_clone/models/user.dart';
 
-final authControllerProvider =
-    StateNotifierProvider<AuthController, bool>((ref) {
-  return AuthController(
-    authAPI: ref.watch(authAPIProvider),
-    userAPI: ref.watch(userAPIProvider),
-  );
-});
+final authControllerProvider = StateNotifierProvider<AuthController, bool>(
+  (ref) {
+    return AuthController(
+      authAPI: ref.watch(authAPIProvider),
+      userAPI: ref.watch(userAPIProvider),
+    );
+  },
+);
 
 final currentUserAccountProvider = FutureProvider((ref) {
   final authController = ref.watch(authControllerProvider.notifier);
   return authController.currentUser();
+});
+
+final currentUserDetailsProvider = FutureProvider((ref) {
+  final uid = ref.watch(currentUserAccountProvider).value!.$id;
+  final userDetails = ref.watch(userDetailsProvider(uid)).asData;
+  return userDetails?.value;
+});
+
+final userDetailsProvider = FutureProvider.family((ref, String uid) async {
+  final authController = ref.watch(authControllerProvider.notifier);
+  return authController.getUserData(uid);
 });
 
 class AuthController extends StateNotifier<bool> {
@@ -40,22 +52,22 @@ class AuthController extends StateNotifier<bool> {
   }) async {
     state = true;
     final res = await _authAPI.signUp(email: email, password: password);
-    UserModel userModel = UserModel(
-      email: email,
-      name: getNameFromeEmail(email),
-      followers: const [],
-      following: const [],
-      profilePic: '',
-      bannerPic: '',
-      uid: '',
-      bio: '',
-      isTwitterBlue: false,
-    );
 
     state = false;
     res.fold(
       (l) => showSnackbar(buildContext, l.message),
       (r) async {
+        UserModel userModel = UserModel(
+          email: email,
+          name: getNameFromeEmail(email),
+          followers: const [],
+          following: const [],
+          profilePic: '',
+          bannerPic: '',
+          uid: r.$id,
+          bio: '',
+          isTwitterBlue: false,
+        );
         final res2 = await _userAPI.saveUserData(userModel);
         res2.fold(
           (l) => showSnackbar(buildContext, l.message),
@@ -82,5 +94,10 @@ class AuthController extends StateNotifier<bool> {
         Navigator.push(buildContext, HomeView.route());
       },
     );
+  }
+
+  Future<UserModel> getUserData(String uid) async {
+    final document = await _userAPI.getUserData(uid);
+    return UserModel.fromMap(document.data);
   }
 }
