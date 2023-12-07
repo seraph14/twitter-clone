@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:appwrite/appwrite.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:twitter_clone/apis/storage_api.dart';
@@ -8,6 +9,7 @@ import 'package:twitter_clone/core/enums/tweet_type_enum.dart';
 import 'package:twitter_clone/core/utils.dart';
 import 'package:twitter_clone/features/auth/controller/auth_controller.dart';
 import 'package:twitter_clone/models/tweet.dart';
+import 'package:twitter_clone/models/user.dart';
 
 final tweetControllerProvider = StateNotifierProvider<TweetController, bool>(
   (ref) {
@@ -18,6 +20,27 @@ final tweetControllerProvider = StateNotifierProvider<TweetController, bool>(
     );
   },
 );
+
+final getTweetsProvider = FutureProvider((ref) async {
+  final tweetController = ref.watch(tweetControllerProvider.notifier);
+  return tweetController.getTweets();
+});
+
+final getRepliesToTweetsProvider =
+    FutureProvider.family((ref, Tweet tweet) async {
+  final tweetController = ref.watch(tweetControllerProvider.notifier);
+  return tweetController.getRepliesToTweet(tweet);
+});
+
+final getTweetByIdProvider = FutureProvider.family((ref, String id) async {
+  final tweetController = ref.watch(tweetControllerProvider.notifier);
+  return tweetController.getTweetById(id);
+});
+
+final latestTweetProvider = StreamProvider((ref) {
+  final tweetAPI = ref.watch(tweetAPIProvider);
+  return tweetAPI.getLatestTweet();
+});
 
 class TweetController extends StateNotifier<bool> {
   final Ref _ref;
@@ -32,10 +55,62 @@ class TweetController extends StateNotifier<bool> {
         _tweetAPI = tweetAPI,
         super(false);
 
+  Future<List<Tweet>> getTweets() async {
+    final tweets = await _tweetAPI.getTweets();
+    return tweets.map((e) => Tweet.fromMap(e.data)).toList();
+  }
+
+  Future<Tweet> getTweetById(String id) async {
+    final tweet = await _tweetAPI.getTweetById(id);
+    return Tweet.fromMap(tweet.data);
+  }
+
+  void reshareTweet(Tweet tweet, UserModel user, BuildContext context) async {
+    Tweet updatedTweet = tweet.copyWith(
+      likes: [],
+      commentIds: [],
+      retweetedBy: user.name,
+      reshareCount: tweet.reshareCount + 1,
+    );
+
+    final res = await _tweetAPI.updateReshareCount(updatedTweet);
+    res.fold((l) => showSnackbar(context, l.message), (r) async {
+      tweet = updatedTweet.copyWith(
+        id: ID.unique(),
+        reshareCount: 0,
+        tweetedAt: DateTime.now(),
+      );
+      final res2 = await _tweetAPI.shareTweet(tweet);
+      res2.fold(
+        (l) => showSnackbar(context, l.message),
+        (r) => showSnackbar(context, 'Retweeted'),
+      );
+    });
+  }
+
+  Future<List<Tweet>> getRepliesToTweet(Tweet tweet) async {
+    final documents = await _tweetAPI.getRepliesToTweets(tweet);
+    return List<Tweet>.from(documents.map((e) => e.data));
+  }
+
+  void likeTweet(Tweet tweet, UserModel user) async {
+    List<String> likes = tweet.likes;
+    if (likes.contains(user.uid)) {
+      likes.remove(user.uid);
+    } else {
+      likes.add(user.uid);
+    }
+
+    Tweet updatedTweet = tweet.copyWith(likes: likes);
+    final res = await _tweetAPI.likeTweet(updatedTweet);
+    res.fold((l) => null, (r) => null);
+  }
+
   void shareTweet({
     required List<File> images,
     required String text,
     required BuildContext context,
+    required String repliedTo,
   }) {
     if (text.isEmpty) {
       showSnackbar(context, 'Please enter a text');
@@ -43,9 +118,18 @@ class TweetController extends StateNotifier<bool> {
     }
 
     if (images.isNotEmpty) {
-      _shareImageTweet(images: images, text: text, context: context);
+      _shareImageTweet(
+        images: images,
+        text: text,
+        context: context,
+        repliedTo: repliedTo,
+      );
     } else {
-      _shareTextTweet(text: text, context: context);
+      _shareTextTweet(
+        text: text,
+        context: context,
+        repliedTo: repliedTo,
+      );
     }
   }
 
@@ -53,6 +137,7 @@ class TweetController extends StateNotifier<bool> {
     required List<File> images,
     required String text,
     required BuildContext context,
+    required String repliedTo,
   }) async {
     state = true;
     final hashtags = _getHashtagsFromText(text);
@@ -71,6 +156,8 @@ class TweetController extends StateNotifier<bool> {
       likes: [],
       commentIds: [],
       reshareCount: 0,
+      retweetedBy: '',
+      repliedTo: repliedTo,
       id: '',
     );
 
@@ -88,6 +175,7 @@ class TweetController extends StateNotifier<bool> {
   void _shareTextTweet({
     required String text,
     required BuildContext context,
+    required String repliedTo,
   }) async {
     state = true;
     final hashtags = _getHashtagsFromText(text);
@@ -104,6 +192,8 @@ class TweetController extends StateNotifier<bool> {
       likes: [],
       commentIds: [],
       reshareCount: 0,
+      retweetedBy: '',
+      repliedTo: repliedTo,
       id: '',
     );
 

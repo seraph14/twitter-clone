@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:twitter_clone/common/common.dart';
-import 'package:twitter_clone/common/loading_page.dart';
 import 'package:twitter_clone/constants/assets_constants.dart';
 import 'package:twitter_clone/core/utils.dart';
 import 'package:twitter_clone/features/tweet/controller/tweet_controller.dart';
@@ -44,7 +43,9 @@ class _CreateTweetViewState extends ConsumerState<CreateTweetView> {
           images: images,
           text: tweetTextEditingController.text,
           context: context,
+          repliedTo: '',
         );
+    Navigator.pop(context);
   }
 
   @override
