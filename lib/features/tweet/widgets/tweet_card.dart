@@ -11,6 +11,7 @@ import 'package:timeago/timeago.dart' as timeago;
 
 import '../../../common/common.dart';
 import '../../../models/tweet.dart';
+import '../../user_profile/view/user_profile_view.dart';
 import '../controller/tweet_controller.dart';
 import '../view/tweet_reply_view.dart';
 import 'carousel_image.dart';
@@ -47,10 +48,10 @@ class TweetCard extends ConsumerWidget {
                             margin: const EdgeInsets.all(10),
                             child: GestureDetector(
                               onTap: () {
-                                // Navigator.push(
-                                //   context,
-                                //   UserProfileView.route(user),
-                                // );
+                                Navigator.push(
+                                  context,
+                                  UserProfileView.route(user),
+                                );
                               },
                               child: CircleAvatar(
                                 backgroundImage: NetworkImage(user.profilePic),

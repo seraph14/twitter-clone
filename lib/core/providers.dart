@@ -29,3 +29,14 @@ final appwriteRealtimeProvider = Provider((ref) {
   final client = ref.watch(appwriteClientProvider);
   return Realtime(client);
 });
+
+final appwriteLiveStreamProvider = StreamProvider((ref) {
+  final realtime = ref.watch(appwriteRealtimeProvider);
+  return realtime.subscribe(
+    [
+      "databases.${AppwriteConstants.databaseId}.collections.${AppwriteConstants.usersCollection}.documents",
+      'databases.${AppwriteConstants.databaseId}.collections.${AppwriteConstants.notificationsCollection}.documents',
+      "databases.${AppwriteConstants.databaseId}.collections.${AppwriteConstants.tweetsCollection}.documents",
+    ],
+  ).stream;
+});
